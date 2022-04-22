@@ -53,9 +53,10 @@ namespace jarvanyhelyzet
                 Allapota = Allapot.hazamegy;
 
                 //takaritó ping
+                Takarito tak;
                 lock (Terem.takaritoValaszto)
                 {
-                    Takarito tak = takaritok.Where(x => x.Allapota == Takarito.Allapot.szabad).FirstOrDefault();
+                    tak = takaritok.Where(x => x.Allapota == Takarito.Allapot.szabad).FirstOrDefault();
                     if (tak != null)
                     {
                         Monitor.Pulse(tak.lockObject);
@@ -64,6 +65,7 @@ namespace jarvanyhelyzet
                     {
                         Monitor.Wait(Terem.takaritoValaszto);
                         tak = takaritok.Where(x => x.Allapota == Takarito.Allapot.szabad).FirstOrDefault();
+                        Monitor.Pulse(tak.lockObject);
                     }
                 }
             }
@@ -91,7 +93,15 @@ namespace jarvanyhelyzet
         {
             while (diakok.Any(x=>x.Allapota != Diak.Allapot.hazamegy))
             {
-
+                lock (lockObject)
+                    Monitor.Wait(lockObject);
+                Allapota = Allapot.dolgozik;
+                Thread.Sleep(Util.rnd.Next(1000, 5001));
+                Allapota = Allapot.szabad;
+                lock (Terem.takaritoValaszto)
+                    Monitor.Pulse(Terem.takaritoValaszto);
+                lock (Terem.teremValaszto)
+                    Monitor.Pulse(Terem.teremValaszto);
             }
         }
     }
