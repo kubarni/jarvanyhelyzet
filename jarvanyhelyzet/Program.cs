@@ -9,8 +9,12 @@ namespace jarvanyhelyzet
     {
         static void Main(string[] args)
         {
-            var ts = Enumerable.Range(1, 5)
+            var tes = Enumerable.Range(1, 5)
                 .Select(i => new Terem()).ToList();
+            var ds = Enumerable.Range(1, 40)
+                .Select(i => new Diak()).ToList();
+            var taks = Enumerable.Range(1, 2)
+                .Select(i => new Takarito()).ToList();
         }
     }
 
@@ -29,6 +33,11 @@ namespace jarvanyhelyzet
             Id = Nextid++;
         }
 
+        public override string ToString()
+        {
+            return $"Id: {Id} Állapot: {Allapota}";
+        }
+
         public void Felel(List<Terem> terems, List<Takarito> takaritok)
         {
             Terem t;
@@ -44,6 +53,8 @@ namespace jarvanyhelyzet
                 {
                     Monitor.Wait(Terem.teremValaszto);
                     t = terems.Where(x => x.Allapota == Terem.Allapot.tiszta).FirstOrDefault();
+                    t.Allapota = Terem.Allapot.feleltetnek;
+                    Allapota = Allapot.felel;
                 }
             }
             if (t != null)
@@ -59,12 +70,18 @@ namespace jarvanyhelyzet
                     tak = takaritok.Where(x => x.Allapota == Takarito.Allapot.szabad).FirstOrDefault();
                     if (tak != null)
                     {
+                        t.Allapota = Terem.Allapot.fertotlenitik;
+                        tak.Allapota = Takarito.Allapot.dolgozik;
                         Monitor.Pulse(tak.lockObject);
                     }
                     else
                     {
+                        t.Allapota = Terem.Allapot.fertotlenitesre_var;
                         Monitor.Wait(Terem.takaritoValaszto);
+                        
                         tak = takaritok.Where(x => x.Allapota == Takarito.Allapot.szabad).FirstOrDefault();
+                        t.Allapota = Terem.Allapot.fertotlenitik;
+                        tak.Allapota = Takarito.Allapot.dolgozik;
                         Monitor.Pulse(tak.lockObject);
                     }
                 }
@@ -77,7 +94,7 @@ namespace jarvanyhelyzet
         public object lockObject;
         public enum Allapot
         {
-            szabad, dolgozik
+            szabad, dolgozik, hazamegy
         }
         public Allapot Allapota { get; set; }
         public static int Nextid = 1;
@@ -87,6 +104,10 @@ namespace jarvanyhelyzet
             Allapota = Allapot.szabad;
             Id = Nextid++;
             lockObject = new object();
+        }
+        public override string ToString()
+        {
+            return $"Id: {Id} Állapot: {Allapota}";
         }
 
         public void Dolgozik(List<Diak> diakok)
@@ -103,6 +124,7 @@ namespace jarvanyhelyzet
                 lock (Terem.teremValaszto)
                     Monitor.Pulse(Terem.teremValaszto);
             }
+            Allapota = Allapot.hazamegy;
         }
     }
 
@@ -121,6 +143,10 @@ namespace jarvanyhelyzet
         {
             Allapota = Allapot.tiszta;
             Id = Nextid++;
+        }
+        public override string ToString()
+        {
+            return $"Id: {Id} Állapot: {Allapota}";
         }
     }
 
