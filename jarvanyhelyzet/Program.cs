@@ -12,7 +12,7 @@ namespace jarvanyhelyzet
         {
             var tes = Enumerable.Range(1, 5)
                 .Select(i => new Terem()).ToList();
-            var ds = Enumerable.Range(1, 40)
+            var ds = Enumerable.Range(1, 20)
                 .Select(i => new Diak()).ToList();
             var taks = Enumerable.Range(1, 2)
                 .Select(i => new Takarito()).ToList();
@@ -111,12 +111,12 @@ namespace jarvanyhelyzet
                     Takarito tak;
                     lock (Terem.takaritoValaszto)
                     {
-                        tak = takaritok.Where(x => x.Allapota == Takarito.Allapot.szabad).FirstOrDefault();
+                        tak = takaritok.Where(x => (int)x.Allapota >= 1).FirstOrDefault();
                         if (tak != null)
                         {
                             t.Allapota = Terem.Allapot.fertotlenitik;
-                            tak.Allapota = Takarito.Allapot.dolgozik;
-                            Monitor.Pulse(tak.lockObject);
+                            lock (tak.lockObject)
+                                Monitor.PulseAll(tak.lockObject);
                         }
                         else
                         {
@@ -126,7 +126,8 @@ namespace jarvanyhelyzet
                             tak = takaritok.Where(x => x.Allapota == Takarito.Allapot.szabad).FirstOrDefault();
                             t.Allapota = Terem.Allapot.fertotlenitik;
                             tak.Allapota = Takarito.Allapot.dolgozik;
-                            Monitor.Pulse(tak.lockObject);
+                            lock (tak.lockObject)
+                                Monitor.PulseAll(tak.lockObject);
                         }
                     }
                 }
@@ -138,7 +139,7 @@ namespace jarvanyhelyzet
             public object lockObject;
             public enum Allapot
             {
-                szabad, dolgozik, hazamegy
+                szabad, var, dolgozik, hazamegy
             }
             public Allapot Allapota { get; set; }
             public static int Nextid = 1;
@@ -158,6 +159,7 @@ namespace jarvanyhelyzet
             {
                 while (diakok.Any(x => x.Allapota != Diak.Allapot.hazamegy))
                 {
+                    Allapota = Allapot.var;
                     lock (lockObject)
                         Monitor.Wait(lockObject);
                     Allapota = Allapot.dolgozik;
